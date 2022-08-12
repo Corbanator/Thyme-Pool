@@ -1,0 +1,17 @@
+@charset "utf-8";
+:root{
+    --color: #000;
+    --size: 10px;
+    --pad: 20px
+}
+
+
+body{
+    padding: var(--pad);
+    background-color: var(--color);
+}
+
+#scrub{
+    height:var(--size);
+    
+}
