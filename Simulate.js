@@ -106,3 +106,20 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
     }
     return result;
 }
+
+export function simulate(dTime, simTime, ballSet, forces, frameWidth, frameHeight) {
+    var simulation = {
+        ballSet: ballSet,
+        frames: new Array
+    }
+    var frame = ballSet;
+    var frameCount = 0;
+    frame.time = 0;
+    for(var i = 0; i < simTime; i+= dTime){
+        var nFrame = newFrame(frame, dTime, ballSet.pos, new Array, frameWidth, frameHeight);
+        simulation.frames.push(nFrame);
+        frame = nFrame;
+        frameCount++;
+    }
+    return simulation;
+}

@@ -1,17 +1,44 @@
 @charset "utf-8";
 :root{
     --color: #000;
-    --size: 10px;
-    --pad: 20px
+    --size: 20px;
+    --pad: 5%;
 }
 
 
 body{
-    padding: var(--pad);
+    padding-left: var(--pad);
+    padding-right: var(--pad);
     background-color: var(--color);
 }
 
-#scrub{
-    height:var(--size);
-    
+#Main{
+    background-color: rgb(255, 255, 255);
+}
+
+#bar{
+    height:
+    var(--size);
+    background-color:  #444;
+    border-radius: 100px;
+    position:
+    relative;
+    top:10px;
+    left: 0;
+    right: 100px;
+    bottom: auto;
+}
+
+#progress{
+    position:absolute;
+    height: 100%;
+}
+
+#scrubber{
+    height: calc(var(--size) * 1.2);
+    width: calc(var(--size) * 1.2);
+    position: absolute;
+    background-color: #ddd;
+    top: calc(-1 * calc(.1 * var(--size)));
+    border-radius: 100px;
 }
