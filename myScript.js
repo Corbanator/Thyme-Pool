@@ -2,6 +2,18 @@ import {newFrame} from "./Simulate.js"
 import {simulate} from "./Simulate.js"
 const canvas = document.getElementById("Main");
 const ctx = canvas.getContext("2d");
+const scale = 1;
+var mouseDown = false;
+const scrub = document.getElementById("scrubber");
+const bar = document.getElementById("bar");
+var gravity = 0;
+var width;
+var ratio = .5;
+var gridWidth = 1000;
+var gridHeight = gridWidth * ratio;
+var gridDensity;
+var barRatio = .05;
+const vidBar = document.getElementById("vidBar");
 
 function getWidth(element){
     var cs = getComputedStyle(element);
@@ -14,24 +26,15 @@ var borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
 
 // Element width and height minus padding and border
 var elementWidth = element.offsetWidth - paddingX - borderX;
-var elementHeight = element.offsetHeight - paddingY - borderY;
+//var elementHeight = element.offsetHeight - paddingY - borderY;
 return elementWidth;
 }
 
-const width = getWidth(document.body);
-const height = window.innerHeight;
-const scale = 1;
-canvas.setAttribute("width", width * scale + "px");
-canvas.setAttribute("height", width * scale * .5 + "px");
-var gravity = 0;
-const bar = document.getElementById("bar");
-bar.setAttribute("width", width * scale + "px");
 
-var mouseDown = false;
-const scrub = document.getElementById("scrubber");
-scrub.onmousedown = (e) => {
+bar.onmousedown = (e) => {
     console.log("click");
     mouseDown = true;
+    update(e);
 }
 
 document.onmouseup = (e) => {
@@ -40,10 +43,11 @@ document.onmouseup = (e) => {
 }
 
 var items = {time:0, pos: new Array};
-for(var i = 20; i< canvas.width - 20; i+=40){
-    for(var j = 20; j< canvas.height - 20; j+= 40){
+
+for(var i = 20; i< gridWidth - 20; i+=40){
+    for(var j = 20; j< gridHeight - 20; j+= 40){
         var direction = Math.random() * 2 * Math.PI;
-        var magnitude = Math.random() * 5;
+        var magnitude = Math.random() * 200;
         var vX = Math.cos(direction) * magnitude;
         var vY = Math.sin(direction) * magnitude;
         var red = Math.round(Math.random() * 255);
@@ -62,7 +66,7 @@ for(var i = 20; i< canvas.width - 20; i+=40){
                 b:blue,
                 a:1
             },
-            mass:1,
+            mass:radius/5,
             radius:radius
         })
     }
@@ -136,7 +140,7 @@ function drawFrame(frame, ballSet){
     for (var i = 0; i < ballSet.pos.length; i++){
         ctx.fillStyle = "rgba(" + ballSet.pos[i].color.r + "," + ballSet.pos[i].color.g + "," + ballSet.pos[i].color.b + "," + ballSet.pos[i].color.a + ")";
         ctx.beginPath();
-        ctx.arc(frame.pos[i].x, frame.pos[i].y, ballSet.pos[i].radius, 0, Math.PI * 2, 0);
+        ctx.arc(frame.pos[i].x * gridDensity, frame.pos[i].y * gridDensity, ballSet.pos[i].radius * gridDensity, 0, Math.PI * 2, 0);
         var m = 5;
         ctx.fill();
     }
@@ -145,6 +149,7 @@ var frame = {
     time: 0,
     pos:items
 };
+
 /*var lastTime = new Date().getTime();
 var deltaTime;
 function gameLoop (timeStamp){
@@ -181,20 +186,47 @@ function update(timestamp) {
 
 start();*/
 
+const playButton = document.getElementById("play-button");
+const play = document.getElementById("play");
+
+var playButtonPos;
 const simTime = 120;
 var frameTime = 1/60;
 var frameCount = (simTime)/frameTime;
-var simulation = simulate(frameTime, simTime, items, new Array,  canvas.clientWidth, canvas.clientHeight)
+var simulation = simulate(frameTime, simTime, items, new Array,  gridWidth, gridHeight)
 
-const scrubPos = scrub.getBoundingClientRect();
-const barPos = bar.getBoundingClientRect();
-const percentageDifference = (barPos.width - scrubPos.width)/barPos.width;
+var scrubPos = scrub.getBoundingClientRect();
+var barPos = bar.getBoundingClientRect();
+var percentageDifference = (barPos.width - scrubPos.width)/barPos.width;
 var mousePosX;
-drawFrame(simulation.frames[0], items);
+var frameNum = 0;
+var vidBarPos;
+const prog = document.getElementById("progress");
+
+function resizeCanvas(){
+    width = getWidth(document.body);
+    canvas.setAttribute("width", width * scale + "px");
+    canvas.setAttribute("height", width * scale * ratio + "px");
+    gridDensity = (width * scale)/gridWidth;
+    vidBarPos = vidBar.getBoundingClientRect();
+    playButtonPos = playButton.getBoundingClientRect();
+    bar.style.width = vidBarPos.width - (playButtonPos.width) + "px";
+    scrubPos = scrub.getBoundingClientRect();
+    barPos = bar.getBoundingClientRect();
+    percentageDifference = (barPos.width - scrubPos.width)/barPos.width;
+    drawFrame(simulation.frames[frameNum], items);
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 document.onmousemove = (e) => {
+    update(e);
+}
+function update(e){
     if(mouseDown){
         console.log("moved");
-        var percent = 100 * ((e.x-barPos.left - (.5 * scrubPos.width)) / (barPos.width * percentageDifference));
+        var percent = 100 * ((e.x - barPos.left - (.5*scrubPos.width)) / (barPos.width * percentageDifference));
         mousePosX = e.x;
         if(percent <= 0){
             percent = 0;
@@ -203,8 +235,46 @@ document.onmousemove = (e) => {
         };
         
         scrub.style.left = (percent * percentageDifference) + "%";
-        var frameNum = Math.round((percent/100) * frameCount);
+        prog.style.width = (percent * percentageDifference) + (percentageDifference) + "%";
+        frameNum = Math.round((percent/100) * frameCount);
         drawFrame(simulation.frames[frameNum], simulation.ballSet);
+    }
+}
+var playing = false;
+playButton.addEventListener("click", playPause);
+
+function playPause(){
+    if(playing == false){
+        playing = true;
+        document.getElementById("play").setAttribute("src","Icons/pause-solid.svg");
+        var time = simulation.frames[frameNum].time;
+        changeFrame();
+    } else {
+        playing = false;
+        document.getElementById("play").setAttribute("src","Icons/play-solid.svg");
+    }
+}
+
+var playbackSpeed = 1;
+function changeFrame(){
+    if(playing == false){
+        document.getElementById("play").setAttribute("src","Icons/play-solid.svg");
+    } else {
+        
+        frameNum +=1;
+        drawFrame(simulation.frames[frameNum], items);
+        var percent = 100 * (frameNum/frameCount);
+            if(percent <= 0){
+                percent = 0;
+            } else if(percent >= 100){
+                percent = 100;
+            };
+        scrub.style.left = (percent * percentageDifference) + "%";
+        prog.style.width = (percent * percentageDifference) + (percentageDifference) + "%";
+        if(frameNum >= frameCount){
+            playing = false;
+        }
+        setTimeout(requestAnimationFrame(changeFrame), (1000/frameTime)/playbackSpeed);
     }
 }
 

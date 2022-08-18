@@ -1,3 +1,4 @@
+var gravity = 300;
 export function applyForce(ball, force){
     magnitude = force.magnitude/ball.mass;
     x = (ball.velocity * Math.cos((ball.direction / 180)*Math.PI)) + (magnitude * Math.cos((force.direction/180)*Math.PI));
@@ -35,6 +36,9 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
 
     for(i=0;i<ballSet.length;i++){
 
+
+        result.pos[i].vY += gravity * dTime;
+
         if(result.pos[i].x - ballSet[i].radius <0) {
             result.pos[i].vX -= 2 * result.pos[i].vX;
             result.pos[i].x -= result.pos[i].x - ballSet[i].radius;
@@ -53,6 +57,7 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
         if(result.pos[i].y + ballSet[i].radius > frameHeight){
             result.pos[i].vY -= 2 * result.pos[i].vY;
             result.pos[i].y -= result.pos[i].y + ballSet[i].radius - frameHeight;
+            result.pos[i].vY += gravity * dTime;
         }
 
         for(var j = i + 1; j<ballSet.length;j++){
@@ -103,6 +108,7 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
             }
 
         }
+        
     }
     return result;
 }

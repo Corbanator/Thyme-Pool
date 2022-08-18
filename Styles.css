@@ -16,22 +16,40 @@ body{
     background-color: rgb(255, 255, 255);
 }
 
+#vid-bar{
+    height:fit-content;
+}
+#play-button{
+    position:relative;
+    height:var(--size);
+    float:left;
+    width:var(--size);
+}
+#play{
+    position:absolute;
+    height: calc(var(--size) * .75);
+    width: auto;
+    left:calc(var(--size)/10);
+    top:calc(var(--size)/15);
+}
+
 #bar{
     height:
     var(--size);
     background-color:  #444;
     border-radius: 100px;
-    position:
-    relative;
-    top:10px;
-    left: 0;
-    right: 100px;
-    bottom: auto;
+    position:relative;
+    float:left;
+    width:auto;
 }
 
 #progress{
-    position:absolute;
+    position:relative;
     height: 100%;
+    background-color: darkblue;
+    border-radius: 100px;
+    width:0%;
+
 }
 
 #scrubber{
