@@ -1,6 +1,6 @@
 import {newFrame} from "./Simulate.js"
 import {simulate} from "./Simulate.js"
-const canvas = document.getElementById("Main");
+const canvas:HTMLCanvasElement = document.getElementById("Main");
 const ctx = canvas.getContext("2d");
 const scale = 1;
 var mouseDown = false;
