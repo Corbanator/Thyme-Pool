@@ -1,4 +1,4 @@
-var gravity = 300;
+var gravity = 0;
 export function applyForce(ball, force){
     magnitude = force.magnitude/ball.mass;
     x = (ball.velocity * Math.cos((ball.direction / 180)*Math.PI)) + (magnitude * Math.cos((force.direction/180)*Math.PI));
@@ -13,8 +13,6 @@ export function getDistance(x1, y1, x2, y2){
     return Math.sqrt((Math.pow((x1-x2),2)) + (Math.pow((y1-y2),2)))
 }
 
-
-
 export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight) {
     function mapBall(ball){
         var ball2 = {x:0, y:0, vX:0, vY:0};
@@ -28,11 +26,14 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
     var result = {time: frame.time + dTime,
     pos:frame.pos.map(mapBall)
     };
-
-    for(var i = 0;i<forces.length;i++){
-        result.pos[forces[i].target].vX += forces[i].magnitude * Math.cos((forces[i].direction/180) * Math.PI)
-        result.pos[forces[i].target].vY += forces[i].magnitude * Math.sin((forces[i].direction/180) * Math.PI)
-    }
+    if(forces != null){
+        for (var i = 0; i < forces.length; i++) {
+            if (forces[i].type == "DIRECT") {
+                result.pos[forces[i].target].vX += forces[i].magnitude * Math.cos(forces[i].direction)
+                result.pos[forces[i].target].vY += forces[i].magnitude * Math.sin(forces[i].direction)
+            }
+        }
+    }   
 
     for(i=0;i<ballSet.length;i++){
 
@@ -61,17 +62,20 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
         }
 
         for(var j = i + 1; j<ballSet.length;j++){
-            var ball1 = ballSet[i]
+            var ball1 = {};
             ball1.x = result.pos[i].x
             ball1.y = result.pos[i].y
             ball1.vY = result.pos[i].vY
             ball1.vX = result.pos[i].vX
-            var ball2 = ballSet[j]
+            ball1.radius = ballSet[i].radius;
+            ball1.mass = ballSet[i].mass;
+            var ball2 = {};
             ball2.x = result.pos[j].x
             ball2.y = result.pos[j].y
             ball2.vX = result.pos[j].vX
             ball2.vY = result.pos[j].vY
-
+            ball2.radius = ballSet[j].radius;
+            ball2.mass = ballSet[j].mass;
 
             if(getDistance(ball1.x, ball1.y, ball2.x, ball2.y) <= ball1.radius + ball2.radius){
                 var collisionAngle = (Math.atan2((ball1.y - ball2.y), (ball1.x - ball2.x)));
@@ -113,19 +117,28 @@ export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight)
     return result;
 }
 
-export function simulate(dTime, simTime, ballSet, forces, frameWidth, frameHeight) {
+export function simulate(dTime, simTime, ballSet, frame1 , forces, frameWidth, frameHeight) {
     var simulation = {
         ballSet: ballSet,
         frames: new Array
     }
-    var frame = ballSet;
+    var frame = {};
+    Object.assign(frame, frame1);
     var frameCount = 0;
     frame.time = 0;
     for(var i = 0; i < simTime; i+= dTime){
-        var nFrame = newFrame(frame, dTime, ballSet.pos, new Array, frameWidth, frameHeight);
-        simulation.frames.push(nFrame);
+        var nFrame = newFrame(frame, dTime, ballSet.pos, forces[i], frameWidth, frameHeight);
+        simulation.frames.push(frame);
         frame = nFrame;
         frameCount++;
     }
+    simulation.frames[0] = frame1;
     return simulation;
 }
+
+var http = require('http');
+
+http.createServer(function (req, res) {
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Hello World!');
+}).listen(8080);
