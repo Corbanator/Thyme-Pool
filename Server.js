@@ -1,144 +1,219 @@
-var gravity = 0;
-export function applyForce(ball, force){
-    magnitude = force.magnitude/ball.mass;
-    x = (ball.velocity * Math.cos((ball.direction / 180)*Math.PI)) + (magnitude * Math.cos((force.direction/180)*Math.PI));
-    y = (ball.velocity * Math.csin((ball.direction / 180)*Math.PI)) + (magnitude * Math.sin((force.direction/180)*Math.PI));
-    newBall = ball;
-    newBall.velocity = Math.sqrt(x*x+y*y);
-    newBall.direction = ((Math.atan2(y,x)*180)/Math.PI);
-    return newBall;
+const Simulate = require("simulate")
+const gridRatio = .5;
+const frametime = 1/60;
+const simTime = 30;
+const gridWidth = 1000;
+const gridHeight = gridWidth * .5;
+var bigArray = new Array();
+/*var ballSet = {
+    pos:[
+    {
+        x:0,
+        y:0,
+        vX:20,
+        vY:20,
+        color:{
+            h:60,
+            s:50,
+            l:50
+        },
+        radius: 10,
+        mass: 1
+    }],
+    time:0
 }
-
-export function getDistance(x1, y1, x2, y2){
-    return Math.sqrt((Math.pow((x1-x2),2)) + (Math.pow((y1-y2),2)))
-}
-
-export function newFrame(frame, dTime, ballSet, forces, frameWidth, frameHeight) {
-    function mapBall(ball){
-        var ball2 = {x:0, y:0, vX:0, vY:0};
-        ball2.x = ball.vX * (dTime) + ball.x;
-        ball2.y = ball.vY * (dTime) + ball.y;
-        ball2.vX = ball.vX;
-        ball2.vY = ball.vY;
-        return ball2;
+*/
+/*function generateBalls(){
+    let ballSet = {
+        pos:[],
+        time:0
     }
-    
-    var result = {time: frame.time + dTime,
-    pos:frame.pos.map(mapBall)
+    for(var i = 20; i< gridWidth - 20; i+=40){
+        for(var j = 20; j< gridHeight - 20; j+= 40){
+            var direction = Math.random() * 1 * Math.PI;
+            var magnitude = Math.random() * 200;
+            var vX = Math.cos(direction) * magnitude;
+            var vY = Math.sin(direction) * magnitude;
+            var hue = Math.round(Math.random() * 355);
+            //var sat = Math.round(Math.random() * 100);
+            //var light = Math.round(Math.random() * 100);
+            var sat = 50;
+            var light = 50;
+            var radius = Math.round(Math.random() * 10 + 5);
+            var mass = Math.round(Math.random() * 10 + 1);
+            ballSet.pos.push({
+                x:i,
+                y:j,
+                vX:vX,
+                vY:vY,
+                color:{
+                    h:hue,
+                    s:light,
+                    l:sat,
+                },
+                mass:mass,
+                radius:radius
+            })
+        }
+    }
+    return ballSet;
+}*/
+
+function generateBalls(){
+    let ballSet = {
+        time:0,
+        pos:[]
     };
-    if(forces != null){
-        for (var i = 0; i < forces.length; i++) {
-            if (forces[i].type == "DIRECT") {
-                result.pos[forces[i].target].vX += forces[i].magnitude * Math.cos(forces[i].direction)
-                result.pos[forces[i].target].vY += forces[i].magnitude * Math.sin(forces[i].direction)
-            }
-        }
-    }   
+    ballSet.pos.push({
+        x:100,
+        y:100,
+        vX:0,
+        vY:0,
+        color:{
+            h:50,
+            s:50,
+            l:50
+        },
+        mass:5,
+        radius:10
+    })
+    return ballSet;
+}
 
-    for(i=0;i<ballSet.length;i++){
 
-
-        result.pos[i].vY += gravity * dTime;
-
-        if(result.pos[i].x - ballSet[i].radius <0) {
-            result.pos[i].vX -= 2 * result.pos[i].vX;
-            result.pos[i].x -= result.pos[i].x - ballSet[i].radius;
-        }
-
-        if(result.pos[i].x + ballSet[i].radius > frameWidth){
-            result.pos[i].vX -= 2 * result.pos[i].vX;
-            result.pos[i].x -= result.pos[i].x + ballSet[i].radius - frameWidth;
-        }
-
-        if(result.pos[i].y - ballSet[i].radius <0){
-            result.pos[i].vY -= 2 * result.pos[i].vY;
-            result.pos[i].y -= result.pos[i].y - ballSet[i].radius;
-        }
-
-        if(result.pos[i].y + ballSet[i].radius > frameHeight){
-            result.pos[i].vY -= 2 * result.pos[i].vY;
-            result.pos[i].y -= result.pos[i].y + ballSet[i].radius - frameHeight;
-            result.pos[i].vY += gravity * dTime;
-        }
-
-        for(var j = i + 1; j<ballSet.length;j++){
-            var ball1 = {};
-            ball1.x = result.pos[i].x
-            ball1.y = result.pos[i].y
-            ball1.vY = result.pos[i].vY
-            ball1.vX = result.pos[i].vX
-            ball1.radius = ballSet[i].radius;
-            ball1.mass = ballSet[i].mass;
-            var ball2 = {};
-            ball2.x = result.pos[j].x
-            ball2.y = result.pos[j].y
-            ball2.vX = result.pos[j].vX
-            ball2.vY = result.pos[j].vY
-            ball2.radius = ballSet[j].radius;
-            ball2.mass = ballSet[j].mass;
-
-            if(getDistance(ball1.x, ball1.y, ball2.x, ball2.y) <= ball1.radius + ball2.radius){
-                var collisionAngle = (Math.atan2((ball1.y - ball2.y), (ball1.x - ball2.x)));
-                
-                var vx1 = ball1.vX * Math.cos(collisionAngle) + Math.sin(collisionAngle) * ball1.vY;
-                var vx2 = ball2.vX * Math.cos(collisionAngle) + Math.sin(collisionAngle) * ball2.vY;
-                var vy1 = ball1.vX * -Math.sin(collisionAngle) + Math.cos(collisionAngle) * ball1.vY;
-                var vy2 = ball2.vX * -Math.sin(collisionAngle) + Math.cos(collisionAngle) * ball2.vY;
-
-                var vx1f = ((ball1.mass - ball2.mass) * vx1 + 2 * ball2.mass * vx2)/(ball1.mass + ball2.mass);
-                var vx2f = ((ball2.mass - ball1.mass) * vx2 + 2 * ball1.mass * vx1)/(ball1.mass + ball2.mass);
-
-                var fvx1 = vx1f * Math.cos(collisionAngle) - Math.sin(collisionAngle) * vy1;
-                var fvy1 = vx1f * Math.sin(collisionAngle) + Math.cos(collisionAngle) * vy1;
-
-                var fvx2 = vx2f * Math.cos(collisionAngle) - Math.sin(collisionAngle) * vy2;
-                var fvy2 = vx2f * Math.sin(collisionAngle) + Math.cos(collisionAngle) * vy2;
-
-                result.pos[i].vX = fvx1;
-                result.pos[i].vY = fvy1;
-
-                result.pos[j].vX = fvx2;
-                result.pos[j].vY = fvy2;
-
-                var distance = (ball1.radius + ball2.radius) - getDistance(ball1.x, ball1.y, ball2.x, ball2.y) 
-                var xmovement = .5 * Math.cos(collisionAngle) * distance;
-                var ymovement = .5 * Math.sin(collisionAngle) * distance;
-
-                result.pos[i].x += xmovement;
-                result.pos[i].y += ymovement;
-
-                result.pos[j].x -= xmovement;
-                result.pos[j].y -= ymovement;
-            }
-
-        }
-        
+function getRoomCode(){
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"
+    var text = "";
+    for(i =0; i<12;i++){
+        text+=possible.charAt(Math.floor(Math.random() * possible.length));
     }
+    var exists = false;
+    for(i=0;i<bigArray.length;i++){
+        if(bigArray[i].Code == text){
+            exists = true;
+        }
+    }
+    if(!exists){
+        return text;
+    } else{
+        return getRoomCode();
+    }
+}
+
+function cleanseSims(array){
+    result = new Array();
+    array.forEach(element => {
+        newResult = Object.assign({},element);
+        delete newResult.Sim;
+        result.push(newResult);
+    });
     return result;
 }
 
-export function simulate(dTime, simTime, ballSet, frame1 , forces, frameWidth, frameHeight) {
-    var simulation = {
-        ballSet: ballSet,
-        frames: new Array
+const express = require("express");
+const app = express();
+const path = require('path');
+const cors = require('cors');
+const port = 8080;
+
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(express.static(__dirname + "/Client"));
+app.use(cors({
+    origin:['http://127.0.0.1:5173','http://127.0.0.1:5174']
+}))
+
+app.post("/Room", (req, res) => {
+    let ballSet = generateBalls();
+    var newRoom = 
+    {
+        Code: getRoomCode(),
+        Sim: Simulate.simulate(frametime,simTime,ballSet,ballSet,new Array(),gridWidth,gridWidth * gridRatio),
+        player1:"N/A",
+        player2:"N/A",
+        roomName:"Test",
+        turn:1,
+        forces:[],
+        ballSet:ballSet
     }
-    var frame = {};
-    Object.assign(frame, frame1);
-    var frameCount = 0;
-    frame.time = 0;
-    for(var i = 0; i < simTime; i+= dTime){
-        var nFrame = newFrame(frame, dTime, ballSet.pos, forces[i], frameWidth, frameHeight);
-        simulation.frames.push(frame);
-        frame = nFrame;
-        frameCount++;
-    }
-    simulation.frames[0] = frame1;
-    return simulation;
+    bigArray.push(newRoom);
+    res.status(201);
+    res.json({
+        Code:newRoom.Code
+    })
+})
+
+function reSim(room){
+    returnSim = Simulate.simulate(frametime, simTime, room.ballSet, room.ballSet, room.forces, gridWidth, gridWidth * gridRatio);
+    return returnSim;
 }
 
-var http = require('http');
+app.get("/Room", (req, res) => {
+        res.header("Status:200")
+        res.end(JSON.stringify(cleanseSims(bigArray)));
+        //res.end(JSON.stringify(bigArray));
 
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello World!');
-}).listen(8080);
+})
+
+app.get("/",(req, res) => {
+    res.status(200);
+    res.sendFile(path.join(__dirname, "Client/MainPage.html"));
+})
+
+
+app.listen(port);
+var nextID = 0;
+const clients = new Map();
+const { Server } = require('ws');
+const wss = new Server({ port:(port+1) });
+wss.on('connection', (ws)=>{
+    console.log("client connected");
+    let metadata = {ID:nextID};
+    clients.set(ws, metadata);
+    nextID++;
+    ws.on('message', (message) =>{
+        let data = JSON.parse(message.toString());
+        console.log(data);
+        id = clients.get(ws).ID;
+        switch (data.type) {
+            case 'join':
+                console.log(bigArray.find(room => room.Code === data.room));
+                
+                let player = 0;
+                if(!(bigArray.find(room => room.Code === data.room).player1 >0)){
+                    bigArray.find(room => room.Code === data.room).player1 = id;
+                    player = 1;
+                } else{
+                    bigArray.find(room => room.Code === data.room).player2 = id;
+                    player = 2;
+                }
+                let returnSim = bigArray.find(room => room.Code === data.room).Sim;
+                clients.get(ws).ROOM = data.room;
+                ws.send(JSON.stringify({type:'join-confirmation', sim:returnSim, player:player, turn:1}));
+                break;
+            case 'action':
+                let force = {type: data.actionType, magnitude:data.magnitude, target:data.target, direction:data.direction, frame:data.frame}
+                bigArray.find(room => room.Code === clients.get(ws).ROOM).forces.push(force);
+                bigArray.find(room => room.Code === clients.get(ws).ROOM).Sim = reSim(bigArray.find(room => room.Code === clients.get(ws).ROOM));
+                switch (bigArray.find(room => room.Code === clients.get(ws).ROOM).turn) {
+                    case 1:
+                        bigArray.find(room => room.Code === clients.get(ws).ROOM).turn = 2;
+                        break;
+                    case 2:
+                        bigArray.find(room => room.Code === clients.get(ws).ROOM).turn = 1;
+                        break;
+                    default:
+                        break;
+                }
+                ws.send(JSON.stringify({type:'new-sim',sim:bigArray.find(room => room.Code === clients.get(ws).ROOM).Sim,turn:bigArray.find(room => room.Code === clients.get(ws).ROOM).turn}));
+
+                break;
+            default:
+                break;
+        }
+
+    });
+});
+
+
+
