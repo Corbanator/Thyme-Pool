@@ -151,6 +151,7 @@ function reSim(room){
 app.get("/Room", (req, res) => {
         res.header("Status:200")
         res.end(JSON.stringify(cleanseSims(bigArray)));
+        console.log(req);
         //res.end(JSON.stringify(bigArray));
 
 })
@@ -163,18 +164,20 @@ app.get("/",(req, res) => {
 
 app.listen(port);
 var nextID = 0;
-const clients = new Map();
+const clients = new Array();
 const { Server } = require('ws');
 const wss = new Server({ port:(port+1) });
 wss.on('connection', (ws)=>{
     console.log("client connected");
-    let metadata = {ID:nextID};
-    clients.set(ws, metadata);
+    clients.push({
+        client:ws,
+        ID:nextID
+    })
     nextID++;
     ws.on('message', (message) =>{
         let data = JSON.parse(message.toString());
         console.log(data);
-        id = clients.get(ws).ID;
+        id = clients.find(item => item.client == ws).ID;
         switch (data.type) {
             case 'join':
                 console.log(bigArray.find(room => room.Code === data.room));
@@ -182,37 +185,47 @@ wss.on('connection', (ws)=>{
                 let player = 0;
                 if(!(bigArray.find(room => room.Code === data.room).player1 >0)){
                     bigArray.find(room => room.Code === data.room).player1 = id;
-                    player = 1;
+                    clients.find(item => item.client == ws).player = 1;
                 } else{
                     bigArray.find(room => room.Code === data.room).player2 = id;
-                    player = 2;
+                    clients.find(item => item.client == ws).player = 2;
                 }
                 let returnSim = bigArray.find(room => room.Code === data.room).Sim;
-                clients.get(ws).ROOM = data.room;
-                ws.send(JSON.stringify({type:'join-confirmation', sim:returnSim, player:player, turn:1}));
+                clients.find(item => item.client == ws).ROOM = data.room;
+                ws.send(JSON.stringify({type:'join-confirmation', sim:returnSim, player:clients.find(item => item.client == ws).player, turn:1}));
                 break;
             case 'action':
                 let force = {type: data.actionType, magnitude:data.magnitude, target:data.target, direction:data.direction, frame:data.frame}
-                bigArray.find(room => room.Code === clients.get(ws).ROOM).forces.push(force);
-                bigArray.find(room => room.Code === clients.get(ws).ROOM).Sim = reSim(bigArray.find(room => room.Code === clients.get(ws).ROOM));
-                switch (bigArray.find(room => room.Code === clients.get(ws).ROOM).turn) {
+                bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).forces.push(force);
+                bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).Sim = reSim(bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM));
+                switch (bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).turn) {
                     case 1:
-                        bigArray.find(room => room.Code === clients.get(ws).ROOM).turn = 2;
+                        bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).turn = 2;
                         break;
                     case 2:
-                        bigArray.find(room => room.Code === clients.get(ws).ROOM).turn = 1;
+                        bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).turn = 1;
                         break;
                     default:
                         break;
                 }
-                ws.send(JSON.stringify({type:'new-sim',sim:bigArray.find(room => room.Code === clients.get(ws).ROOM).Sim,turn:bigArray.find(room => room.Code === clients.get(ws).ROOM).turn}));
-
+                //ws.send(JSON.stringify({type:'new-sim',sim:bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).Sim,turn:bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).turn}));
+                for(let i = 0; i<clients.length; i++){
+                    if(clients[i].ROOM == clients.find(item => item.client == ws).ROOM){
+                        clients[i].client.send(JSON.stringify({type:'new-sim',sim:bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).Sim,turn:bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).turn}));
+                    }
+                }
                 break;
             default:
                 break;
         }
 
     });
+
+    ws.on("disconnect", (message)=>{
+        if(clients.find(item => item.client == ws).player == 1){bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).player1 = null}
+        else{bigArray.find(room => room.Code === clients.find(item => item.client == ws).ROOM).player2 = null}
+        
+    })
 });
 
 
