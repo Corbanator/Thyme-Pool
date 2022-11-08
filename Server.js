@@ -149,7 +149,7 @@ function reSim(room){
 }
 
 app.get("/Room", (req, res) => {
-        res.header("Status:200")
+        res.status(200);
         res.end(JSON.stringify(cleanseSims(bigArray)));
         console.log(req);
         //res.end(JSON.stringify(bigArray));
