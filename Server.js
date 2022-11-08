@@ -120,7 +120,8 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(express.static(__dirname + "/Client"));
 app.use(cors({
-    origin:['http://127.0.0.1:5173','http://127.0.0.1:5174']
+    origin:['http://127.0.0.1:5173','http://127.0.0.1:5174','http://growtobe.me:5174',
+    'http://growtobe.me:5173']
 }))
 
 app.post("/Room", (req, res) => {
